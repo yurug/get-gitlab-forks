@@ -19,7 +19,7 @@ You will need:
 - jq
 - curl
 
-# Typical uses
+# Typical usage
 
 If you are assigning programming projects to students, I found the following process sufficiently simple and efficient:
 
