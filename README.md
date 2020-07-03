@@ -1,3 +1,5 @@
+![Trigger: Push action](https://github.com/yurug/get-gitlab-forks/workflows/Trigger:%20Push%20action/badge.svg)
+
 # Get Gitlab Forks
 
 Do you want to retrieve all the forks of your gitlab project you have
