@@ -144,10 +144,10 @@ parse_cmd () {
 
 check_prog () {
   info "Looking for $1..." \
-  $(if ! which "$1"; then
+  "$(if ! which "$1"; then
       echo "not found! Follow installation instructions from $2"
       exit 1
-  fi)
+  fi)"
 }
 
 check_deps () {
