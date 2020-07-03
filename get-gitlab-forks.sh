@@ -22,6 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+VERSION=0.1
+
 usage () {
   cat <<'EOF'
 Description
@@ -31,6 +33,8 @@ Description
 Usage
 -----
 	  -h	    Display this message.
+	  -v        Show version.
+          -V        Activate verbose mode.
 
 Variables
 ---------
@@ -49,7 +53,7 @@ Example
 	SERVER=http://my.gitlab-instance.org \
         TOKEN=sSAyTnigVb31f6nHhzPq           \
 	BASE=uid/myproject                   \
-        ./gbf.sh
+        ./get-gitlab-forks.sh
 
 Invariants
 ----------
@@ -69,12 +73,18 @@ EOF
   exit 0
 }
 
+version () {
+  echo $VERSION
+  exit 0
+}
+
 ###############
 #  Variables  #
 ###############
 
-ROOT=`pwd`
+ROOT=$(pwd)
 OUTDIR=${OUTDIR:-students}
+VERBOSE=0
 
 ###############
 #  Utilities  #
@@ -88,7 +98,7 @@ check_var () {
 }
 
 request () {
-  curl -s --header "Private-Token: $TOKEN" $1
+  curl -s --header "Private-Token: $TOKEN" "$1"
 }
 
 api () {
@@ -96,11 +106,13 @@ api () {
 }
 
 info () {
-  echo "info> $*"
+  if [ "$VERBOSE" == 1 ]; then
+    echo "info> $*"
+  fi
 }
 
 unquote () {
-  echo $1 | tr -d '"'
+  echo "$1" | tr -d '"'
 }
 
 ########################
@@ -108,11 +120,17 @@ unquote () {
 ########################
 
 parse_cmd () {
-  while getopts ":h:p:" arg; do
+  while getopts "hVv" arg; do
     case $arg in
       h)
 	usage
 	;;
+      V)
+	VERBOSE=1
+	;;
+      v)
+	version
+        ;;
       *)
 	usage
 	;;
@@ -125,25 +143,25 @@ parse_cmd () {
 ##################
 
 check_prog () {
-  echo -n "info> Looking for $1..."
-  if ! which $1; then
+  info "Looking for $1..." \
+  $(if ! which "$1"; then
       echo "not found! Follow installation instructions from $2"
       exit 1
-  fi
+  fi)
 }
 
 check_deps () {
   check_prog jq   'https://stedolan.github.io/jq/'
   check_prog curl 'https://curl.haxx.se/'
 
-  if [ `echo ${BASH_VERSION} | cut -f1 -d.` -lt 4 ]; then
+  if [ "$(echo "${BASH_VERSION}" | cut -f1 -d.)" -lt 4 ]; then
      echo 'Sorry I need bash > 4.'
      exit 1
   fi
 }
 
 setup_workspace () {
-  mkdir -p $OUTDIR
+  mkdir -p "$OUTDIR"
 }
 
 init () {
@@ -166,11 +184,10 @@ check_vars () {
   ################
   #
   # We identify a base project using its URL suffix stored in $BASE:
-  # $SERVER/`cat $BASE` should point to the URL of the gitlab project
-  # home.
+  # $SERVER/$BASE hould point to the URL of the gitlab project home.
   #
   check_var BASE
-  BASE=`echo $BASE | sed s,/,'%2F',g`
+  BASE=${BASE/'/'/'%2F'}
 
   ################
   # Gitlab token #
@@ -187,39 +204,35 @@ declare -A lastmod
 declare -A visibility
 
 get_forks () {
-  for DATA in                   \
-    `api projects $BASE/forks   \
-    | jq -c '.[] | {            \
-      url : .ssh_url_to_repo,   \
-      v   : .visibility         \
-    }'`
+  for DATA in                    \
+    $(api projects "$BASE/forks" \
+    | jq -c '.[] | { url : .ssh_url_to_repo, v : .visibility }')
   do
-    URL=`echo $DATA | jq '.url'`
-    URL=`unquote $URL`
+    URL="$(echo "$DATA" | jq '.url')"
+    URL="$(unquote "$URL")"
 
-    info '*' Processing $URL
+    info '*' Processing "$URL"
 
-    USER=`echo $URL | cut -f2 -d: | cut -d/ -f1`
-    PROJECT=`echo $URL | cut -f2 -d: | cut -d/ -f2 | tr -d '"'`
-    OUT=$OUTDIR/$USER
+    USER="$(echo "$URL" | cut -f2 -d: | cut -d/ -f1)"
+    OUT="$OUTDIR/$USER"
 
-    info '**' Retrieving latest version of fork $USER
+    info '**' Retrieving latest version of fork "$USER"
 
-    if [ ! -d $OUT ]; then
-    	git clone $URL $OUT;
-	users[$USER]='new'
+    if [ ! -d "$OUT" ]; then
+    	git clone "$URL" "$OUT";
+	users["$USER"]='new'
     else
-    	cd $OUT; git pull --rebase; cd ../..
-	users[$USER]='up to date'
+    	cd "$OUT" || git pull --rebase; cd ../..
+	users["$USER"]='up to date'
     fi
 
-    info '**' Analyzing $USER
+    info '**' Analyzing "$USER"
 
-    cd $OUT
-    commits[$USER]=`git rev-list --all --count`
-    lastmod[$USER]=`git log -1 --date=short --format=%cd`
-    visibility[$USER]=$(unquote `echo $DATA | jq '.v'`)
-    cd $ROOT
+    cd "$OUT" || exit
+    commits[$USER]=$(git rev-list --all --count)
+    lastmod[$USER]=$(git log -1 --date=short --format=%cd)
+    visibility[$USER]="$(unquote "$(echo "$DATA" | jq '.v')")"
+    cd "$ROOT" || exit
   done
 }
 
@@ -232,8 +245,8 @@ show_synthesis () {
       echo "$user,${commits[$user]},${lastmod[$user]},${visibility[$user]}" >> synthesis.csv
   done
 
-  cat synthesis.csv | column -t -s, | while read line; do
-    echo -e "`echo "$line" | sed -e s/public/'\\\\033[0;31m'public'\\\\033[0m'/g`"
+  column -t -s, < synthesis.csv | while read -r line; do
+    echo -e "${line/public/"\\033[0;31mpublic\\033[0m"}"
   done
 }
 
@@ -241,9 +254,9 @@ show_synthesis () {
 # Putting everything together #
 ###############################
 
-parse_cmd $*
+parse_cmd "$@"
 check_vars
 init
-mkdir -p $OUTDIR
+mkdir -p "$OUTDIR"
 get_forks
 show_synthesis

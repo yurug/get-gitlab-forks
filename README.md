@@ -1,7 +1,9 @@
 # Get Gitlab Forks
 
-Do you want to retrieve all the forks of your gitlab project?
-If so, this script could help you. To learn how to use it:
+Do you want to retrieve all the forks of your gitlab project you have
+access to? If so, this script could help you.
+
+To learn how to use it:
 
 ```
 ./get-gitlab-forks.sh -h
@@ -15,7 +17,6 @@ You will need:
 - jq
 - curl
 
-and also a personal access token from your gitlab account.
 
 
 
