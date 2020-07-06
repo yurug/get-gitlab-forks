@@ -81,7 +81,6 @@ process () {
   init
   parse_cmd "$@"
   check_vars
-  setup_workspace
   get_forks
   show_synthesis
 }
