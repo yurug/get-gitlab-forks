@@ -262,4 +262,4 @@ show_synthesis () {
   done
 }
 
-process
+process "$@"
