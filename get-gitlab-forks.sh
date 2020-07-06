@@ -73,9 +73,17 @@ EOF
   exit 0
 }
 
-version () {
-  echo $VERSION
-  exit 0
+###############
+#  Main entry #
+###############
+
+process () {
+  init
+  parse_cmd "$@"
+  check_vars
+  setup_workspace
+  get_forks
+  show_synthesis
 }
 
 ###############
@@ -118,6 +126,11 @@ unquote () {
 ########################
 # Command line parsing #
 ########################
+
+version () {
+  echo $VERSION
+  exit 0
+}
 
 parse_cmd () {
   while getopts "hVv" arg; do
@@ -250,13 +263,4 @@ show_synthesis () {
   done
 }
 
-###############################
-# Putting everything together #
-###############################
-
-parse_cmd "$@"
-check_vars
-init
-mkdir -p "$OUTDIR"
-get_forks
-show_synthesis
+process
