@@ -32,38 +32,38 @@ Description
 
 Usage
 -----
-	  -h	    Display this message.
-	  -v        Show version.
+          -h        Display this message.
+          -v        Show version.
           -V        Activate verbose mode.
 
 Variables
 ---------
 
-	SERVER	    is the URL to the Gitlab instance (must start with https://)
-	TOKEN       is the personal access token
-	BASE	    is the identifier of the forked project
+        SERVER      is the URL to the Gitlab instance (must start with https://)
+        TOKEN       is the personal access token
+        BASE        is the identifier of the forked project
 
 Optional variables
 ------------------
-	OUTDIR      is the directory where forks are cloned (default is 'students')
+        OUTDIR      is the directory where forks are cloned (default is 'students')
 
 Example
 -------
 
-	SERVER=http://my.gitlab-instance.org \
+        SERVER=http://my.gitlab-instance.org \
         TOKEN=sSAyTnigVb31f6nHhzPq           \
-	BASE=uid/myproject                   \
+        BASE=uid/myproject                   \
         ./get-gitlab-forks.sh
 
 Invariants
 ----------
 
-	$SERVER/$BASE should point to the gitlab project homepage.
+        $SERVER/$BASE should point to the gitlab project homepage.
 
 Resources
 ---------
 
-	Please browse
+        Please browse
 
            https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
 
@@ -135,17 +135,17 @@ parse_cmd () {
   while getopts "hVv" arg; do
     case $arg in
       h)
-	usage
-	;;
+        usage
+        ;;
       V)
-	VERBOSE=1
-	;;
+        VERBOSE=1
+        ;;
       v)
-	version
+        version
         ;;
       *)
-	usage
-	;;
+        usage
+        ;;
     esac
   done
 }
@@ -231,11 +231,11 @@ get_forks () {
     info '**' Retrieving latest version of fork "$USER"
 
     if [ ! -d "$OUT" ]; then
-    	git clone "$URL" "$OUT";
-	users["$USER"]='new'
+        git clone "$URL" "$OUT";
+        users["$USER"]='new'
     else
-    	cd "$OUT" || git pull --rebase; cd ../..
-	users["$USER"]='up to date'
+        cd "$OUT" || git pull --rebase; cd ../..
+        users["$USER"]='up to date'
     fi
 
     info '**' Analyzing "$USER"
