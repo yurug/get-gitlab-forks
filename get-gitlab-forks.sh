@@ -231,8 +231,16 @@ get_forks () {
     info '**' Retrieving latest version of fork "$USER"
 
     if [ ! -d "$OUT" ]; then
-        git clone "$URL" "$OUT";
-        users["$USER"]='new'
+        git clone "$URL" "$OUT" >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            users["$USER"]='new'
+        else
+            users["$USER"]='denied'
+            commits["$USER"]='?'
+            lastmod["$USER"]='?'
+            visibility["$USER"]='denied'
+            continue
+        fi
     else
         cd "$OUT" || git pull --rebase; cd ../..
         users["$USER"]='up to date'
@@ -258,7 +266,9 @@ show_synthesis () {
   done
 
   column -t -s, < synthesis.csv | while read -r line; do
-    echo -e "${line/public/"\\033[0;31mpublic\\033[0m"}"
+      line=${line/public/\\033[0;31mpublic\\033[0m}
+      line=${line/denied/\\033[0;31mdenied\\033[0m}
+      echo -e "$line"
   done
 }
 
