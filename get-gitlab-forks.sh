@@ -216,43 +216,48 @@ declare -A lastmod
 declare -A visibility
 
 get_forks () {
-  for DATA in                    \
-    $(api projects "$BASE/forks" \
-    | jq -c '.[] | { url : .ssh_url_to_repo, v : .visibility }')
+  for PAGE in `seq 1 1000`
   do
-    URL="$(echo "$DATA" | jq '.url')"
-    URL="$(unquote "$URL")"
+    FORKS=$(api projects "$BASE/forks?per_page=100&page=$PAGE" \
+                | jq -c '.[] | { url : .ssh_url_to_repo, v : .visibility }')
+    if [ $? -ne 0 ]; then break; fi
+    if [ "x$FORKS" = "x" ]; then break; fi
+    for DATA in $FORKS
+    do
+      URL="$(echo "$DATA" | jq '.url')"
+      URL="$(unquote "$URL")"
 
-    info '*' Processing "$URL"
+      info '*' Processing "$URL"
 
-    USER="$(echo "$URL" | cut -f2 -d: | cut -d/ -f1)"
-    OUT="$OUTDIR/$USER"
+      USER="$(echo "$URL" | cut -f2 -d: | cut -d/ -f1)"
+      OUT="$OUTDIR/$USER"
 
-    info '**' Retrieving latest version of fork "$USER"
+      info '**' Retrieving latest version of fork "$USER"
 
-    if [ ! -d "$OUT" ]; then
-        git clone "$URL" "$OUT" >/dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            users["$USER"]='new'
-        else
-            users["$USER"]='denied'
-            commits["$USER"]='?'
-            lastmod["$USER"]='?'
-            visibility["$USER"]='denied'
-            continue
-        fi
-    else
-        cd "$OUT" && git pull --rebase; cd ../..
-        users["$USER"]='up to date'
-    fi
+      if [ ! -d "$OUT" ]; then
+          git clone "$URL" "$OUT" >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+              users["$USER"]='new'
+          else
+              users["$USER"]='denied'
+              commits["$USER"]='?'
+              lastmod["$USER"]='?'
+              visibility["$USER"]='denied'
+              continue
+          fi
+      else
+          cd "$OUT" && git pull --rebase; cd ../..
+          users["$USER"]='up to date'
+      fi
 
-    info '**' Analyzing "$USER"
+      info '**' Analyzing "$USER"
 
-    cd "$OUT" || exit
-    commits[$USER]=$(git rev-list --all --count)
-    lastmod[$USER]=$(git log -1 --date=short --format=%cd)
-    visibility[$USER]="$(unquote "$(echo "$DATA" | jq '.v')")"
-    cd "$ROOT" || exit
+      cd "$OUT" || exit
+      commits[$USER]=$(git rev-list --all --count)
+      lastmod[$USER]=$(git log -1 --date=short --format=%cd)
+      visibility[$USER]="$(unquote "$(echo "$DATA" | jq '.v')")"
+      cd "$ROOT" || exit
+    done
   done
 }
 
