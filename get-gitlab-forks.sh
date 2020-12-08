@@ -242,7 +242,7 @@ get_forks () {
             continue
         fi
     else
-        cd "$OUT" || git pull --rebase; cd ../..
+        cd "$OUT" && git pull --rebase; cd ../..
         users["$USER"]='up to date'
     fi
 
