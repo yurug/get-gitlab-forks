@@ -109,7 +109,7 @@ request () {
 }
 
 api () {
-  request "$SERVER/api/v4/${1}/${2}"
+  request "$SERVER/api/v4/${1}/${2}?per_page=100"
 }
 
 info () {
